@@ -4,22 +4,26 @@ services:
   database:
     build: 
        context: ./database
-    container_name: database  
+       dockerfile: Dockerfile
+    image: iothub_database-image:latest
+    container_name: iothub_database
     environment:
-      - POSTGRES_DB:${DB_NAME}  
-      - POSTGRES_USER:${DB_USER}  
-      - POSTGRES_PASSWORD:${DB_PASS} 
+      - POSTGRES_DB=${DB_NAME}  
+      - POSTGRES_USER=${DB_USER}  
+      - POSTGRES_PASSWORD=${DB_PASS} 
     volumes:
-      - ./database:/var/lib/postgresql/data  
+      - ./database/storage:/var/lib/postgresql/data  
     networks:
-      - iot-network   
-    
+      - iot-network
+
   backend:
     build:
       context: ./backend  
       dockerfile: Dockerfile  
-    image: iothub_backend:latest
-    container_name: backend   
+    image: iothub_backend-image:latest
+    container_name: iothub_backend  
+    depends_on:
+      - database 
     env_file:
       - .env  
     ports:
