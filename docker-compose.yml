@@ -1,4 +1,4 @@
-version: '3.3'
+version: '3.8'
 
 services:
   database:
@@ -6,28 +6,26 @@ services:
        context: ./database
     container_name: database  
     environment:
-      - POSTGRES_DB:mydatabase  
-      - POSTGRES_USER:postgres  
-      - POSTGRES_PASSWORD:qwert12345  
+      - POSTGRES_DB:${DB_NAME}  
+      - POSTGRES_USER:${DB_USER}  
+      - POSTGRES_PASSWORD:${DB_PASS} 
     volumes:
-      - ./db:/var/lib/postgresql/data  
+      - ./database:/var/lib/postgresql/data  
     networks:
-      - iot_network  
+      - iot-network   
     
   backend:
     build:
       context: ./backend  
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile  
     image: iothub_backend:latest
-    container_name: backend 
-    volumes:
-      - ./backend:/app  
+    container_name: backend   
+    env_file:
+      - .env  
     ports:
-      - "8000:8000"  
+      - "8000:8000"
     networks:
-      - iot_network  
-
+      - iot-network  
 
 networks:
-  iot_network:
-
+  iot-network:
