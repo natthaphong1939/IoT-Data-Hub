@@ -51,6 +51,12 @@ class TempData(BaseModel):
     Temperature: float
 
 
+class MotionData(BaseModel):
+    Location: str 
+    Timestamp:int
+    NumberMotion:int
+    
+
 @app.post('/temp')
 async def post_temp(tempdata: TempData) -> dict:
     conn = None
@@ -58,7 +64,7 @@ async def post_temp(tempdata: TempData) -> dict:
         conn = get_db_connection()
         cur = conn.cursor()
         insert_query = sql.SQL("""
-            INSERT INTO iot_data (location, timestamps, temperature)
+            INSERT INTO temperature_logs (location, timestamps, temperature)
             VALUES (%s, %s, %s)
         """)
         cur.execute(insert_query, (tempdata.Location, tempdata.Timestamp, tempdata.Temperature))
@@ -66,6 +72,26 @@ async def post_temp(tempdata: TempData) -> dict:
         return {"message": "Done JA", "timestamp": dt}
     except Exception as e:
         logger.error(f"Failed to post temperature data: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+    finally:
+        cur.close()
+
+@app.post('/motion')
+async def post_motion(motiondata: MotionData) -> dict:
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        insert_query = sql.SQL("""
+            INSERT INTO motion_logs  (location, timestamps, Number_of_movements)
+            VALUES (%s, %s, %s)
+        """)
+        # Number_of_movements --> Number of captured movements/30min
+        cur.execute(insert_query, (motiondata.Location, motiondata.Timestamp, motiondata.NumberMotion))
+        dt = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(motiondata.Timestamp))
+        return {"message": "Done JA", "timestamp": dt}
+    except Exception as e:
+        logger.error(f"Failed to post motion sensor data: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
     finally:
         cur.close()
