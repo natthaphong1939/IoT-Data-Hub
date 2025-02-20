@@ -21,9 +21,9 @@ services:
       context: ./backend  
       dockerfile: Dockerfile  
     image: iothub_backend-image:latest
-    container_name: iothub_backend  
     depends_on:
       - database 
+    container_name: iothub_backend  
     env_file:
       - .env  
     ports:

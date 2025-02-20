@@ -2,11 +2,11 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from psycopg2 import pool, sql
+from datetime import datetime
+from dotenv import load_dotenv
 import os
 import psycopg2
 import logging
-import time
-from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -24,7 +24,7 @@ DB_PASS = os.getenv("DB_PASS")
 try:
     conn_pool = psycopg2.pool.SimpleConnectionPool(
         minconn=1,
-        maxconn=5,
+        maxconn=3,
         host=DB_HOST,
         dbname=DB_NAME,
         user=DB_USER,
@@ -55,46 +55,51 @@ class MotionData(BaseModel):
     Location: str 
     Timestamp:int
     NumberMotion:int
-    
+
+
+async def currentTime() -> str:
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 @app.post('/temp')
 async def post_temp(tempdata: TempData) -> dict:
     conn = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        insert_query = sql.SQL("""
-            INSERT INTO temperature_logs (location, timestamps, temperature)
-            VALUES (%s, %s, %s)
-        """)
-        cur.execute(insert_query, (tempdata.Location, tempdata.Timestamp, tempdata.Temperature))
-        dt = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(tempdata.Timestamp))
-        return {"message": "Done JA", "timestamp": dt}
+        conn = get_db_connection()  
+        with conn.cursor() as cur:
+            insert_query = """
+                INSERT INTO temperature_logs (location, timestamps, temperature)
+                VALUES (%s, %s, %s)
+            """
+            cur.execute(insert_query, (tempdata.Location, tempdata.Timestamp, tempdata.Temperature))
+        return {"message": "Temperature Sensor data logged successfully.", "timestamp": await currentTime()}
+
     except Exception as e:
         logger.error(f"Failed to post temperature data: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+
     finally:
-        cur.close()
+        if conn:
+            conn_pool.putconn(conn)  
 
 @app.post('/motion')
 async def post_motion(motiondata: MotionData) -> dict:
     conn = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        insert_query = sql.SQL("""
-            INSERT INTO motion_logs  (location, timestamps, Number_of_movements)
-            VALUES (%s, %s, %s)
-        """)
-        # Number_of_movements --> Number of captured movements/30min
-        cur.execute(insert_query, (motiondata.Location, motiondata.Timestamp, motiondata.NumberMotion))
-        dt = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(motiondata.Timestamp))
-        return {"message": "Done JA", "timestamp": dt}
+        conn = get_db_connection()  
+        with conn.cursor() as cur:
+            insert_query = """
+                INSERT INTO motion_logs  (location, timestamps, Number_of_movements)
+                VALUES (%s, %s, %s)
+            """
+            cur.execute(insert_query, (motiondata.Location, motiondata.Timestamp, motiondata.NumberMotion))
+        return {"message": "Motion Sensor data logged successfully.", "timestamp": await currentTime()}
     except Exception as e:
         logger.error(f"Failed to post motion sensor data: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
     finally:
-        cur.close()
+        if conn:
+            conn_pool.putconn(conn) 
+
 
 @app.get("/")
 async def read_root():
