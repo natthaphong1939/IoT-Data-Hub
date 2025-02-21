@@ -36,6 +36,7 @@ services:
       - "8000:8000"
     networks:
       - iot-network  
+    restart: always
 
 networks:
   iot-network:
