@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import os
 import psycopg2
 import logging
+import asyncio
 
 load_dotenv()
 
@@ -20,6 +21,8 @@ DB_HOST = os.getenv("DB_HOST")
 DB_NAME = os.getenv("DB_NAME")
 DB_USER = os.getenv("DB_USER")
 DB_PASS = os.getenv("DB_PASS")
+device1 = os.getenv("DEVICE1")
+device2 = os.getenv("DEVICE2")
 
 try:
     conn_pool = psycopg2.pool.SimpleConnectionPool(
@@ -60,9 +63,39 @@ class MotionData(BaseModel):
 async def currentTime() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+async def query(var: str, tempP: float,timeP: int):
+    conn = get_db_connection()  
+    query = """
+    SELECT timestamps, temperature
+    FROM temperature_logs
+    WHERE location = %s
+    AND timestamps = (SELECT MAX(timestamps) FROM temperature_logs WHERE location = %s);
+    """
+    result = await asyncio.to_thread(execute_query, conn, query, var)
+    if result:
+        timestampOld, temperatureOld = result[0], result[1]
+        if abs(float(temperatureOld) - tempP) > 10 and abs(timestampOld-timeP) < 25:
+            print(f"Noone here naja")
+        else :
+            print("ARA-ARA it's normally, Good boy.")
+    else:
+        print("No data found.")
+    conn_pool.putconn(conn)
+
+def execute_query(conn, query, var):
+    with conn.cursor() as cursor:
+        cursor.execute(query, (var, var))
+        return cursor.fetchone()  
+        
+
 @app.post('/temp')
 async def post_temp(tempdata: TempData) -> dict:
     conn = None
+    #Before test you need to change the "Location" in .env file
+    if tempdata.Location == device1:
+        await query(device2,tempdata.Temperature,tempdata.Timestamp)
+    if tempdata.Location == device2:
+        await query(device1,tempdata.Temperature,tempdata.Timestamp)
     try:
         conn = get_db_connection()  
         with conn.cursor() as cur:
