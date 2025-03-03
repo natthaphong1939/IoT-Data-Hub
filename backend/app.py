@@ -1,4 +1,5 @@
 import os
+import json
 import logging
 import asyncio
 import psycopg2
@@ -27,12 +28,13 @@ DB_PASS = os.getenv("DB_PASS")
 device1 = os.getenv("DEVICE1")
 device2 = os.getenv("DEVICE2")
 
+#Temperature difference
+temp_diff = 10 
 
 class TempData(BaseModel):
     Location: str
     Timestamp: int
     Temperature: float
-
 
 class MotionData(BaseModel):
     Location: str 
@@ -78,7 +80,7 @@ async def query(secondary_device: str, current_temperature: float,current_timest
     if result:
         previous_timestamp, previous_temperature = result[0], result[1]
         # If the temperature difference exceeds 10 and the time difference is less than 25 seconds, trigger an alert
-        if abs(float(previous_temperature) - current_temperature) > 10 and abs(previous_timestamp - current_timestamp) < 25:
+        if abs(float(previous_temperature) - current_temperature) > temp_diff and abs(previous_timestamp - current_timestamp) < 25:
             print(f"No one is here; the air conditioner should turn off.")  # Trigger alert
     conn_pool.putconn(conn)
 
@@ -87,11 +89,38 @@ def execute_query(conn, query, secondary_device):
         cursor.execute(query, (secondary_device, secondary_device))
         return cursor.fetchone()  
 
+@app.get("/temp1")
+async def get_temp1():
+    conn = None
+    try:
+        conn = conn_pool.getconn()
+        with conn.cursor() as cur:
+            query = """
+            SELECT DISTINCT ON (location) 
+            location, timestamps, CAST(temperature AS DOUBLE PRECISION) AS temperature
+            FROM temperature_logs
+            ORDER BY location, timestamps DESC;
+            """
+            cur.execute(query)
+            data = cur.fetchall()            
+            json_data = {
+                row[0]: {"Location": row[0], "Timestamps": row[1], "Temperature": row[2]}
+                for row in data
+            }
+        return json_data
+    except Exception as e:
+        logger.error(f"Failed to fetch temperature data: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+    finally:
+        if conn:
+            conn_pool.putconn(conn)
+
+# Handles HTTP POST requests to compare the request before logging temperature data into the database.
 @app.post('/temp')
 async def post_temp(tempdata: TempData) -> dict:
     conn = None
     try:
-        # Before testing, change the "Location" in .env file
+        # Before testing, change the "Location" (Name of the device) in .env file
         secondary_device = None
         if tempdata.Location == device1:
             secondary_device = device2
@@ -119,6 +148,7 @@ async def post_temp(tempdata: TempData) -> dict:
         if conn:
             conn_pool.putconn(conn)
 
+# Handles HTTP POST requests to log motion sensor data into the database
 @app.post('/motion')
 async def post_motion(motiondata: MotionData) -> dict:
     conn = None
@@ -138,6 +168,7 @@ async def post_motion(motiondata: MotionData) -> dict:
         if conn:
             conn_pool.putconn(conn) 
 
+#Just a Root path Nothing importance :)
 @app.get("/")
 async def read_root():
     return {"Hello": "World"}
