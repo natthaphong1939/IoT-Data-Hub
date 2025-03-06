@@ -11,5 +11,6 @@ CREATE TABLE motion_logs  (
     id SERIAL PRIMARY KEY,
     location VARCHAR(255),
     timestamps BIGINT,
-    Number_of_movements DECIMAL
+    Number_of_movements DECIMAL,
+    Sync_Number DECIMAL
 );
