@@ -221,7 +221,7 @@ async def get_motion():
 #Every 25 minute it will increment count 1
 @app.get('/count')
 async def get_count():
-    int count = 0
+    count = 0
     while True:
         await asyncio.sleep(25 * 60)  # Sleep for 25 minutes
         count += 1
