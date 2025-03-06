@@ -6,3 +6,4 @@ pydantic==1.10.21
 requests==2.32.3
 asyncpg==0.29.0
 fastapi-utils==0.8.0
+websockets==15.0.1

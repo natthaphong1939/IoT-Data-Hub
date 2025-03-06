@@ -1,16 +1,16 @@
 import os
+import json
 import logging
 import asyncio
 import psycopg2
 from datetime import datetime
 from dotenv import load_dotenv
 from typing import Optional
+from pydantic import BaseModel
+from psycopg2 import pool
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi_utils.tasks import repeat_every
-from pydantic import BaseModel
-from psycopg2 import pool, sql
 from fastapi.middleware.cors import CORSMiddleware
-
 
 # Load environment variables from the .env file
 load_dotenv()
@@ -21,7 +21,6 @@ logging.basicConfig(level=logging.INFO)
 app = FastAPI()
 
 origins = ["http://localhost:3000"]
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -29,9 +28,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# WebSocket clients connected
-clients = []
 
 # Database connection details from environment variables
 DB_HOST = os.getenv("DB_HOST")
@@ -44,7 +40,7 @@ device1 = os.getenv("DEVICE_TEMP1")
 device2 = os.getenv("DEVICE_TEMP2")
 
 #number of Motion Sensors
-numberMotion = os.getenv("MOTION_SENSOR_COUNT")
+numberMotion = int(os.getenv("MOTION_SENSOR_COUNT"))
 
 #Temperature difference (Celsius)
 temp_diff = 10 
@@ -53,9 +49,10 @@ temp_diff = 10
 time_diff = 25
 
 #Use to sync motion sensor
-count = 0
+app.state.sync_count = 0
 
-
+# WebSocket clients connected
+clients = []
 
 class TempData(BaseModel):
     Location: str
@@ -94,27 +91,81 @@ def get_db_connection():
 async def currentTime() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-async def query(secondary_device: str, current_temperature: float,current_timestamp: int):
-    conn = get_db_connection()
-    # Query the latest data of the secondary device to compare with the incoming data
-    query = """
-    SELECT timestamps, temperature
-    FROM temperature_logs
-    WHERE location = %s
-    AND timestamps = (SELECT MAX(timestamps) FROM temperature_logs WHERE location = %s);
-    """
-    result = await asyncio.to_thread(execute_query, conn, query, secondary_device)
-    if result:
-        previous_timestamp, previous_temperature = result[0], result[1]
-        # If the temperature difference exceeds 10 and the time difference is less than 25 seconds, trigger an alert
-        if abs(float(previous_temperature) - current_temperature) > temp_diff and abs(previous_timestamp - current_timestamp) < time_diff:
-            print(f"No one is here. The air conditioner should turn off.")  # Trigger alert
-    conn_pool.putconn(conn)
+async def query(secondary_device: str, current_temperature: float, current_timestamp: int):
+    try:
+        conn = get_db_connection()
+        query = """
+        SELECT timestamps, temperature
+        FROM temperature_logs
+        WHERE location = %s
+        ORDER BY timestamps DESC
+        LIMIT 1;
+        """
+        with conn.cursor() as cursor:
+            cursor.execute(query, (secondary_device,))
+            result = cursor.fetchone()
 
-def execute_query(conn, query, secondary_device):
-    with conn.cursor() as cursor:
-        cursor.execute(query, (secondary_device, secondary_device))
-        return cursor.fetchone()  
+        if result:
+            previous_timestamp, previous_temperature = result
+            # If the temperature difference exceeds 10 and the time difference is less than 25 seconds, trigger an alert
+            if (
+                abs(float(previous_temperature) - current_temperature) > temp_diff and 
+                abs(previous_timestamp - current_timestamp) < time_diff
+            ):
+                logger.warning("No one is here. The air conditioner should turn off.") # Trigger alert
+                print(f"No one is here. The air conditioner should turn off.")  # Trigger alert
+    except Exception as e:
+        print(f"Error occurred: {e}")
+    finally:
+        conn_pool.putconn(conn)
+
+async def getMotionData(sync_number: int, group: bool = False):
+    conn = get_db_connection()
+    try:
+        if group:
+            query = """
+            SELECT SUM(Number_of_movements), MAX(timestamps)
+            FROM motion_logs
+            WHERE Sync_Number = %s;
+            """
+        else:
+            query = """
+            SELECT location, timestamps, Number_of_movements
+            FROM motion_logs
+            WHERE Sync_Number = %s;
+            """
+
+        with conn.cursor() as cur:
+            cur.execute(query, (sync_number,))
+            data = cur.fetchall()
+
+        if group:
+            total_movements, max_timestamp = data[0] if data else (0, None)
+            if total_movements == 0 or max_timestamp is None:
+                logger.warning("No one is here. The air conditioner should turn off.") # Trigger alert
+            return {
+                "total_movements": total_movements,
+                "max_timestamp": max_timestamp if max_timestamp else "No data"
+            }
+        else:
+            return {
+                row[0]: {"location": row[0], "timestamp": row[1], "number_of_movements": row[2]}
+                for row in data
+            }
+    except Exception as e:
+        logger.error(f"Failed to fetch motion data: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+    finally:
+        if conn:
+            conn_pool.putconn(conn)  
+
+@app.get('/motion/each')
+async def get_each_motion():
+    return await getMotionData(app.state.sync_count , group=False)
+
+@app.get('/motion/group')
+async def get_group_motion():
+    return await getMotionData(app.state.sync_count , group=True)
 
 @app.get("/temp")
 async def get_temp1():
@@ -166,25 +217,10 @@ async def post_temp(tempdata: TempData) -> dict:
                 VALUES (%s, %s, %s)
             """
             cur.execute(insert_query, (tempdata.Location, tempdata.Timestamp, tempdata.Temperature))
-
         return {"message": "Temperature Sensor data logged successfully.", "timestamp": await currentTime()}
     except Exception as e:
         logger.error(f"Failed to post temperature data: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Internal Server Error")
-    finally:
-        if conn:
-            conn_pool.putconn(conn)
-
-@app.get('/motion1')
-async def get_motion():
-    conn == None
-    try:
-        conn = get_db_connection()
-
-
-    except Exception as e:
-        logger.error(f"Failed to fetch temperature data: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
     finally:
         if conn:
             conn_pool.putconn(conn)
@@ -197,8 +233,8 @@ async def post_motion(motiondata: MotionData) -> dict:
         conn = get_db_connection()  
         with conn.cursor() as cur:
             insert_query = """
-                INSERT INTO motion_logs  (location, timestamps, Number_of_movements)
-                VALUES (%s, %s, %s.%s)
+                INSERT INTO motion_logs (location, timestamps, Number_of_movements, Sync_Number)
+                VALUES (%s, %s, %s, %s)
             """
             cur.execute(insert_query, (motiondata.Location, motiondata.Timestamp, motiondata.NumberMotion, motiondata.SyncNumber))
         return {"message": "Motion Sensor data logged successfully.", "timestamp": await currentTime()}
@@ -209,30 +245,15 @@ async def post_motion(motiondata: MotionData) -> dict:
         if conn:
             conn_pool.putconn(conn)
 
-@app.get('/motion')
-async def get_motion():
-    conn = None
-    try:
-        conn = conn_pool.getconn()
-        with conn.cursor() as cur:
-            query = """
-            SELECT location, timestamps, Number_of_movements
-            FROM motion_logs
-            ORDER BY timestamps DESC;
-            """
-            cur.execute(query)
-            data = cur.fetchall()
-            json_data = [
-                {"Location": row[0], "Timestamp": row[1], "Number_of_movements": row[2]}
-                for row in data
-            ]
-        return {"motion_logs": json_data}
-    except Exception as e:
-        logger.error(f"Failed to fetch motion data: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
-    finally:
-        if conn:
-            conn_pool.putconn(conn)
+
+@app.get('/count')
+async def get_count():
+    return {"SyncNumber": app.state.sync_count}
+
+#Just a Root path Nothing importance :)
+@app.get("/")
+async def read_root():
+    return {"Hello": "World"}
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -250,28 +271,18 @@ async def websocket_endpoint(websocket: WebSocket):
         clients.remove(websocket)
         print("Client disconnected")
 
-#Every 25 minute it will increment count 1
-@app.get('/count')
-async def get_count():
-    count = 0
-    return {"count": count}
-
 @app.on_event("startup")
 @repeat_every(seconds=25 * 60)  # Repeat every 25 minutes
-async def increment_count_task() -> None:
-    global count
-    count += 1
+async def increment_count_task():
+    app.state.sync_count += 1
+    if app.state.sync_count  > 15:
+        app.state.sync_count  = 0
+    pass
 
-@app.get('/count')
-async def get_count():
-    return {"Count": count}
-
-# Root route for testing
-@app.get("/")
-async def read_root():
-    return {"message": "WebSocket example"}
-
-# #Just a Root path Nothing importance :)
-# @app.get("/")
-# async def read_root():
-#     return {"Hello": "World"}
+@app.on_event("startup")
+@repeat_every(seconds=31*60) #Repeat every 31 minutes
+async def check_motion() -> None:
+    totalMove = getMotionData(app.state.sync_count , group=True)
+    if (totalMove < 0):
+        logger.warning("No one is here. The air conditioner should turn off.") # Trigger alert
+    pass

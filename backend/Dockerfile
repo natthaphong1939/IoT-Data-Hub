@@ -6,8 +6,7 @@ WORKDIR /app
 COPY app.py /app/
 COPY requirements.txt /app/
 
-RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt \
-    && pip install "uvicorn[standard]" fastapi websockets psycopg2 dotenv
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 8000
 
