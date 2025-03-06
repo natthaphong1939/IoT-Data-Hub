@@ -9,6 +9,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi_utils.tasks import repeat_every
 from pydantic import BaseModel
 from psycopg2 import pool, sql
+from fastapi.middleware.cors import CORSMiddleware
 
 # Load environment variables from the .env file
 load_dotenv()
@@ -17,6 +18,16 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI()
+
+origins = ["http://localhost:3000"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Database connection details from environment variables
 DB_HOST = os.getenv("DB_HOST")
