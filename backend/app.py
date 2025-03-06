@@ -27,6 +27,9 @@ DB_PASS = os.getenv("DB_PASS")
 device1 = os.getenv("DEVICE_TEMP1")
 device2 = os.getenv("DEVICE_TEMP2")
 
+#number of Motion Sensors
+numberMotion = os.getenv("MOTION_SENSOR_COUNT")
+
 #Temperature difference (Celsius)
 temp_diff = 10 
 
@@ -35,6 +38,8 @@ time_diff = 25
 
 #Use to sync motion sensor
 count = 0
+
+
 
 class TempData(BaseModel):
     Location: str
