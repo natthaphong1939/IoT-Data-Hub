@@ -1,5 +1,4 @@
 import os
-import json
 import logging
 import asyncio
 import psycopg2
@@ -25,11 +24,17 @@ DB_USER = os.getenv("DB_USER")
 DB_PASS = os.getenv("DB_PASS")
 
 # Assign locations for the devices from environment variables
-device1 = os.getenv("DEVICE1")
-device2 = os.getenv("DEVICE2")
+device1 = os.getenv("DEVICE_TEMP1")
+device2 = os.getenv("DEVICE_TEMP2")
 
-#Temperature difference
+#Temperature difference (Celsius)
 temp_diff = 10 
+
+#Time difference (Second Unit)
+time_diff = 25
+
+#Use to sync motion sensor
+count = 0
 
 class TempData(BaseModel):
     Location: str
@@ -40,6 +45,7 @@ class MotionData(BaseModel):
     Location: str 
     Timestamp:int
     NumberMotion:int
+    SyncNumber:int
 
 try:
     conn_pool = psycopg2.pool.SimpleConnectionPool(
@@ -80,8 +86,8 @@ async def query(secondary_device: str, current_temperature: float,current_timest
     if result:
         previous_timestamp, previous_temperature = result[0], result[1]
         # If the temperature difference exceeds 10 and the time difference is less than 25 seconds, trigger an alert
-        if abs(float(previous_temperature) - current_temperature) > temp_diff and abs(previous_timestamp - current_timestamp) < 25:
-            print(f"No one is here; the air conditioner should turn off.")  # Trigger alert
+        if abs(float(previous_temperature) - current_temperature) > temp_diff and abs(previous_timestamp - current_timestamp) < time_diff:
+            print(f"No one is here. The air conditioner should turn off.")  # Trigger alert
     conn_pool.putconn(conn)
 
 def execute_query(conn, query, secondary_device):
@@ -89,7 +95,7 @@ def execute_query(conn, query, secondary_device):
         cursor.execute(query, (secondary_device, secondary_device))
         return cursor.fetchone()  
 
-@app.get("/temp1")
+@app.get("/temp")
 async def get_temp1():
     conn = None
     try:
@@ -148,6 +154,20 @@ async def post_temp(tempdata: TempData) -> dict:
         if conn:
             conn_pool.putconn(conn)
 
+@app.get('/motion1')
+async def get_motion():
+    conn == None
+    try:
+        conn = get_db_connection()
+
+
+    except Exception as e:
+        logger.error(f"Failed to fetch temperature data: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+    finally:
+        if conn:
+            conn_pool.putconn(conn)
+
 # Handles HTTP POST requests to log motion sensor data into the database
 @app.post('/motion')
 async def post_motion(motiondata: MotionData) -> dict:
@@ -157,9 +177,9 @@ async def post_motion(motiondata: MotionData) -> dict:
         with conn.cursor() as cur:
             insert_query = """
                 INSERT INTO motion_logs  (location, timestamps, Number_of_movements)
-                VALUES (%s, %s, %s)
+                VALUES (%s, %s, %s.%s)
             """
-            cur.execute(insert_query, (motiondata.Location, motiondata.Timestamp, motiondata.NumberMotion))
+            cur.execute(insert_query, (motiondata.Location, motiondata.Timestamp, motiondata.NumberMotion, motiondata.SyncNumber))
         return {"message": "Motion Sensor data logged successfully.", "timestamp": await currentTime()}
     except Exception as e:
         logger.error(f"Failed to post motion sensor data: {str(e)}")
@@ -192,6 +212,25 @@ async def get_motion():
     finally:
         if conn:
             conn_pool.putconn(conn) 
+
+#Every 25 minute it will increment count 1
+@app.get('/count')
+async def get_count():
+    int count = 0
+    while True:
+        await asyncio.sleep(25 * 60)  # Sleep for 25 minutes
+        count += 1
+    return {"count": count}
+
+@app.on_event("startup")
+@repeat_every(seconds=25 * 60)  # Repeat every 25 minutes
+async def increment_count_task() -> None:
+    global count
+    count += 1
+
+@app.get('/count')
+async def get_count():
+    return {"Count": count}
 
 #Just a Root path Nothing importance :)
 @app.get("/")
