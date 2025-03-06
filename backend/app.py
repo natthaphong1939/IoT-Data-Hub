@@ -166,6 +166,31 @@ async def post_motion(motiondata: MotionData) -> dict:
         raise HTTPException(status_code=500, detail=f"Internal Server Error")
     finally:
         if conn:
+            conn_pool.putconn(conn)
+
+@app.get('/motion')
+async def get_motion():
+    conn = None
+    try:
+        conn = conn_pool.getconn()
+        with conn.cursor() as cur:
+            query = """
+            SELECT location, timestamps, Number_of_movements
+            FROM motion_logs
+            ORDER BY timestamps DESC;
+            """
+            cur.execute(query)
+            data = cur.fetchall()
+            json_data = [
+                {"Location": row[0], "Timestamp": row[1], "Number_of_movements": row[2]}
+                for row in data
+            ]
+        return {"motion_logs": json_data}
+    except Exception as e:
+        logger.error(f"Failed to fetch motion data: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+    finally:
+        if conn:
             conn_pool.putconn(conn) 
 
 #Just a Root path Nothing importance :)
