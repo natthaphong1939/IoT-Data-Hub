@@ -38,6 +38,19 @@ services:
       - iot-network  
     restart: always
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: iothub_frontend-image:latest
+    container_name: iothub_frontend
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    networks:
+      - iot-network
+
 networks:
   iot-network:
 
