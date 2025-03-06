@@ -5,3 +5,4 @@ python-dotenv==1.0.1
 pydantic==1.10.21
 requests==2.32.3
 asyncpg==0.29.0
+fastapi-utils==0.8.0
