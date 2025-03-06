@@ -5,11 +5,12 @@ import psycopg2
 from datetime import datetime
 from dotenv import load_dotenv
 from typing import Optional
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi_utils.tasks import repeat_every
 from pydantic import BaseModel
 from psycopg2 import pool, sql
 from fastapi.middleware.cors import CORSMiddleware
+
 
 # Load environment variables from the .env file
 load_dotenv()
@@ -28,6 +29,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# WebSocket clients connected
+clients = []
 
 # Database connection details from environment variables
 DB_HOST = os.getenv("DB_HOST")
@@ -228,7 +232,23 @@ async def get_motion():
         raise HTTPException(status_code=500, detail="Internal Server Error")
     finally:
         if conn:
-            conn_pool.putconn(conn) 
+            conn_pool.putconn(conn)
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """Handle WebSocket connections"""
+    await websocket.accept()
+    clients.append(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            print(f"Received from client: {data}")
+            if data == "Open Door":
+                print("done")
+                await websocket.send_text("Door is opening...")
+    except WebSocketDisconnect:
+        clients.remove(websocket)
+        print("Client disconnected")
 
 #Every 25 minute it will increment count 1
 @app.get('/count')
@@ -246,7 +266,12 @@ async def increment_count_task() -> None:
 async def get_count():
     return {"Count": count}
 
-#Just a Root path Nothing importance :)
+# Root route for testing
 @app.get("/")
 async def read_root():
-    return {"Hello": "World"}
+    return {"message": "WebSocket example"}
+
+# #Just a Root path Nothing importance :)
+# @app.get("/")
+# async def read_root():
+#     return {"Hello": "World"}
