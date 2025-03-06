@@ -1,13 +1,66 @@
-import './App.css'
+import { useState, useEffect } from "react";
+import axios from "axios";
 
-function App() {
-  return (
-    <>
-      <button type="button" className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">
-        Open door
-      </button>
-    </>
-  )
+interface TempData {
+  Location: string;
+  Timestamps: number;
+  Temperature: number;
 }
 
-export default App
+export default function Home() {
+  const [tempData, setTempData] = useState<Record<string, TempData> | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get<{ [key: string]: TempData }>(
+          "http://localhost:8000/temp"
+        );
+        setTempData(response.data);
+      } catch (err: any) {
+        console.log(err);
+        
+        setError(`Error: ${err?.message || "Failed to fetch temperature data."}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) return <p className="text-center text-gray-500">Loading...</p>;
+  if (error) return <p className="text-center text-red-500">{error}</p>;
+
+  return (
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg">
+        <h1 className="text-2xl font-semibold mb-4 text-center">Temperature Data</h1>
+        {tempData ? (
+          <ul>
+            {Object.entries(tempData).map(([key, data]) => (
+              <li
+                key={key}
+                className="border-b py-2 flex justify-between items-center"
+              >
+                <div>
+                  <p className="text-lg font-medium">{data.Location}</p>
+                  <p className="text-sm text-gray-500">
+                    {new Date(data.Timestamps * 1000).toLocaleString()}
+                  </p>
+                </div>
+                <span className="text-lg font-bold text-blue-600">
+                  {data.Temperature.toFixed(2)}°C
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-center text-gray-500">No data available</p>
+        )}
+      </div>
+    </div>
+  );
+}
