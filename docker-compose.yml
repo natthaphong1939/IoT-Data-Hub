@@ -12,7 +12,7 @@ services:
       - POSTGRES_USER=${DB_USER}  
       - POSTGRES_PASSWORD=${DB_PASS} 
     volumes:
-      - ./database/storage:/var/lib/postgresql/data  
+      - database-volume:/var/lib/postgresql/data  
     networks:
       - iot-network
     healthcheck:
@@ -40,3 +40,6 @@ services:
 
 networks:
   iot-network:
+
+volumes:
+  database-volume:
