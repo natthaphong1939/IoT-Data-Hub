@@ -223,9 +223,6 @@ async def get_motion():
 @app.get('/count')
 async def get_count():
     count = 0
-    while True:
-        await asyncio.sleep(25 * 60)  # Sleep for 25 minutes
-        count += 1
     return {"count": count}
 
 @app.on_event("startup")
