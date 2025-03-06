@@ -6,6 +6,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from typing import Optional
 from fastapi import FastAPI, HTTPException
+from fastapi_utils.tasks import repeat_every
 from pydantic import BaseModel
 from psycopg2 import pool, sql
 
