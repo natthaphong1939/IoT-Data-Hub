@@ -43,10 +43,10 @@ device2 = os.getenv("DEVICE_TEMP2")
 numberMotion = int(os.getenv("MOTION_SENSOR_COUNT"))
 
 #Temperature difference (Celsius)
-temp_diff = 10 
+temp_diff = float(10)
 
 #Time difference (Second Unit)
-time_diff = 25
+time_diff = 1500
 
 #Use to sync motion sensor
 app.state.sync_count = 0
@@ -107,49 +107,46 @@ async def query(secondary_device: str, current_temperature: float, current_times
 
         if result:
             previous_timestamp, previous_temperature = result
-            # If the temperature difference exceeds 10 and the time difference is less than 25 seconds, trigger an alert
+            # If the temperature difference exceeds 10 and the time difference is less than 1500 seconds(25 minutes), trigger an alert
             if (
-                abs(float(previous_temperature) - current_temperature) > temp_diff and 
-                abs(previous_timestamp - current_timestamp) < time_diff
+                abs(float(previous_temperature) - float(current_temperature)) > temp_diff and
+                abs(previous_timestamp - current_timestamp) > time_diff
             ):
-                logger.warning("No one is here. The air conditioner should turn off.") # Trigger alert
-                print(f"No one is here. The air conditioner should turn off.")  # Trigger alert
+                logger.warning("No one is here. The air conditioner should turn off. -- 1") # Trigger alert
     except Exception as e:
         print(f"Error occurred: {e}")
     finally:
         conn_pool.putconn(conn)
 
-async def getMotionData(sync_number: int, group: bool = False):
+def getMotionData(sync_number: int, group: bool = False):
     conn = get_db_connection()
     try:
         if group:
             query = """
-            SELECT SUM(Number_of_movements), MAX(timestamps)
+            SELECT SUM(numberOfMovements), MAX(timestamps)
             FROM motion_logs
-            WHERE Sync_Number = %s;
+            WHERE syncNumber = %s;
             """
         else:
             query = """
-            SELECT location, timestamps, Number_of_movements
+            SELECT location, timestamps, numberOfMovements
             FROM motion_logs
-            WHERE Sync_Number = %s;
+            WHERE syncNumber = %s;
             """
-
         with conn.cursor() as cur:
             cur.execute(query, (sync_number,))
             data = cur.fetchall()
-
         if group:
             total_movements, max_timestamp = data[0] if data else (0, None)
-            if total_movements == 0 or max_timestamp is None:
-                logger.warning("No one is here. The air conditioner should turn off.") # Trigger alert
+            if total_movements == 0:
+                logger.warning("No one is here. The air conditioner should turn off. -- 2 ") # Trigger alert
             return {
-                "total_movements": total_movements,
-                "max_timestamp": max_timestamp if max_timestamp else "No data"
+                "totalMovements": total_movements,
+                "maxTimestamp": max_timestamp if max_timestamp else "No data"
             }
         else:
             return {
-                row[0]: {"location": row[0], "timestamp": row[1], "number_of_movements": row[2]}
+                row[0]: {"Location": row[0], "Timestamp": row[1], "NumberOfMovements": row[2]}
                 for row in data
             }
     except Exception as e:
@@ -161,11 +158,11 @@ async def getMotionData(sync_number: int, group: bool = False):
 
 @app.get('/motion/each')
 async def get_each_motion():
-    return await getMotionData(app.state.sync_count , group=False)
+    return  getMotionData(app.state.sync_count , group=False)
 
 @app.get('/motion/group')
 async def get_group_motion():
-    return await getMotionData(app.state.sync_count , group=True)
+    return  getMotionData(app.state.sync_count , group=True)
 
 @app.get("/temp")
 async def get_temp1():
@@ -233,7 +230,7 @@ async def post_motion(motiondata: MotionData) -> dict:
         conn = get_db_connection()  
         with conn.cursor() as cur:
             insert_query = """
-                INSERT INTO motion_logs (location, timestamps, Number_of_movements, Sync_Number)
+                INSERT INTO motion_logs (location, timestamps, numberOfMovements, syncNumber)
                 VALUES (%s, %s, %s, %s)
             """
             cur.execute(insert_query, (motiondata.Location, motiondata.Timestamp, motiondata.NumberMotion, motiondata.SyncNumber))
@@ -244,7 +241,6 @@ async def post_motion(motiondata: MotionData) -> dict:
     finally:
         if conn:
             conn_pool.putconn(conn)
-
 
 @app.get('/count')
 async def get_count():
@@ -277,12 +273,11 @@ async def increment_count_task():
     app.state.sync_count += 1
     if app.state.sync_count  > 15:
         app.state.sync_count  = 0
-    pass
-
+    
 @app.on_event("startup")
 @repeat_every(seconds=31*60) #Repeat every 31 minutes
-async def check_motion() -> None:
+async def check_motion() -> None:   
     totalMove = getMotionData(app.state.sync_count , group=True)
     if (totalMove < 0):
-        logger.warning("No one is here. The air conditioner should turn off.") # Trigger alert
-    pass
+        logger.warning("No one is here. The air conditioner should turn off. --3") # Trigger alert
+    
