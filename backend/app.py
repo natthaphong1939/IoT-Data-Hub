@@ -39,9 +39,6 @@ DB_PASS = os.getenv("DB_PASS")
 device1 = os.getenv("DEVICE_TEMP1")
 device2 = os.getenv("DEVICE_TEMP2")
 
-#number of Motion Sensors
-numberMotion = int(os.getenv("MOTION_SENSOR_COUNT"))
-
 #Temperature difference (Celsius)
 temp_diff = float(10)
 
