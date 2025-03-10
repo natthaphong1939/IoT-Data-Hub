@@ -48,8 +48,11 @@ time_diff = 1500
 #Use to sync motion sensor
 app.state.sync_count = 0
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
 # WebSocket clients connected
-clients = []
+connected_clients = []
 
 class TempData(BaseModel):
     Location: str
@@ -248,21 +251,27 @@ async def get_count():
 async def read_root():
     return {"Hello": "World"}
 
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    """Handle WebSocket connections"""
     await websocket.accept()
-    clients.append(websocket)
+    connected_clients.append(websocket)
+    logger.info("Client connected")
+
     try:
         while True:
             data = await websocket.receive_text()
-            print(f"Received from client: {data}")
-            if data == "Open Door":
-                print("done")
+            logger.info(f"Received from client: {data}")
+            
+            if data == "open":
                 await websocket.send_text("Door is opening...")
+                logger.info("Door is opening...")
     except WebSocketDisconnect:
-        clients.remove(websocket)
-        print("Client disconnected")
+        connected_clients.remove(websocket)
+        logger.info("Client disconnected")
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+
 
 @app.on_event("startup")
 @repeat_every(seconds=25 * 60)  # Repeat every 25 minutes
