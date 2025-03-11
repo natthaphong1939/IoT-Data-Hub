@@ -248,28 +248,6 @@ async def get_count():
 async def read_root():
     return {"Hello": "World"}
 
-
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    connected_clients.append(websocket)
-    logger.info("Client connected")
-
-    try:
-        while True:
-            data = await websocket.receive_text()
-            logger.info(f"Received from client: {data}")
-            
-            if data == "open":
-                await websocket.send_text("Door is opening...")
-                logger.info("Door is opening...")
-    except WebSocketDisconnect:
-        connected_clients.remove(websocket)
-        logger.info("Client disconnected")
-    except Exception as e:
-        logger.error(f"WebSocket error: {e}")
-
-
 @app.on_event("startup")
 @repeat_every(seconds=25 * 60)  # Repeat every 25 minutes
 async def increment_count_task():

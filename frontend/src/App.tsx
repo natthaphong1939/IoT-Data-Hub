@@ -11,8 +11,6 @@ export default function Home() {
   const [tempData, setTempData] = useState<Record<string, TempData> | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [messages, setMessages] = useState<string[]>([]);
-  const [socket, setSocket] = useState<WebSocket | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,43 +30,7 @@ export default function Home() {
 
     fetchData();
   }, []);
-
-  useEffect(() => {
-    const ws = new WebSocket("ws://localhost:8000/ws");
-
-    ws.onopen = () => {
-      console.log("Connected to WebSocket Server");
-    };
-
-    ws.onmessage = (event) => {
-      console.log("Message from server:", event.data);
-    };
-
-    ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
-    };
-
-    ws.onclose = () => {
-      console.log("WebSocket connection closed");
-    };
-
-    setSocket(ws);
-
-    return () => {
-      ws.close();
-    };
-  }, []);
-
-
-  const handleButtonClick = () => {
-    if (socket?.readyState === WebSocket.OPEN) {
-      socket.send("open");
-      console.log("Sent: open");
-    } else {
-      console.error("WebSocket is not open");
-    }
-  };
-
+  
   if (loading) return <p className="text-center text-gray-500">Loading...</p>;
   if (error) return <p className="text-center text-red-500">{error}</p>;
 
@@ -104,11 +66,11 @@ export default function Home() {
         <section>
 
           <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-              <button
-                onClick={handleButtonClick}
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full">Send "open" to WebSocket
-              </button>
-            </div>
+            <button
+              // onClick={handleButtonClick}
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full">Send "open" to WebSocket
+            </button>
+          </div>
         </section>
 
       </div>
