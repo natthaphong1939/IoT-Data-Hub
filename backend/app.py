@@ -17,6 +17,9 @@ load_dotenv()
 
 app = FastAPI()
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -39,16 +42,11 @@ device2 = os.getenv("DEVICE_TEMP2")
 temp_diff = float(10)
 
 #Time difference (Second Unit)
-time_diff = 1500
+time_diff = 180
 
 #Use to sync motion sensor
 app.state.sync_count = 0
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
-
-# WebSocket clients connected
-connected_clients = []
+app.state.i = 0
 
 class TempData(BaseModel):
     Location: str
@@ -89,26 +87,28 @@ async def currentTime() -> str:
 
 async def query(secondary_device: str, current_temperature: float, current_timestamp: int):
     try:
-        conn = get_db_connection()
-        query = """
-        SELECT timestamps, temperature
-        FROM temperature_logs
-        WHERE location = %s
-        ORDER BY timestamps DESC
-        LIMIT 1;
-        """
-        with conn.cursor() as cursor:
-            cursor.execute(query, (secondary_device,))
-            result = cursor.fetchone()
-
-        if result:
-            previous_timestamp, previous_temperature = result
-            # If the temperature difference exceeds 10 and the time difference is less than 1500 seconds(25 minutes), trigger an alert
-            if (
-                abs(float(previous_temperature) - float(current_temperature)) > temp_diff and
-                abs(previous_timestamp - current_timestamp) > time_diff
-            ):
-                logger.warning("No one is here. The air conditioner should turn off. -- 1") # Trigger alert
+        app.state.i = app.state.i +1
+        if app.state.i == 2:
+            conn = get_db_connection()
+            query = """
+            SELECT timestamps, temperature
+            FROM temperature_logs
+            WHERE location = %s
+            ORDER BY timestamps DESC
+            LIMIT 1;
+            """ 
+            with conn.cursor() as cursor:
+                cursor.execute(query, (secondary_device,))
+                result = cursor.fetchone()
+            app.state.i = 0
+            if result:
+                previous_timestamp, previous_temperature = result
+                # If the temperature difference exceeds 10 and the time difference is less than 1500 seconds(25 minutes), trigger an alert
+                if (
+                    abs(float(previous_temperature) - float(current_temperature)) > temp_diff and
+                    abs(previous_timestamp - current_timestamp) < time_diff
+                ):
+                    logger.warning("No one is here. The air conditioner should turn off. -- 1") # Trigger alert
     except Exception as e:
         print(f"Error occurred: {e}")
     finally:
@@ -135,7 +135,6 @@ def getMotionData(sync_number: int, group: bool = False):
         if group:
             total_movements, max_timestamp = data[0] if data else (0, None)
             if total_movements == 0:
-                logger.warning("No one is here. The air conditioner should turn off. -- 2 ") # Trigger alert
             return {
                 "totalMovements": total_movements,
                 "maxTimestamp": max_timestamp if max_timestamp else "No data"
@@ -258,6 +257,6 @@ async def increment_count_task():
 @repeat_every(seconds=31*60) #Repeat every 31 minutes
 async def check_motion() -> None:   
     totalMove = getMotionData(app.state.sync_count , group=True)
-    if (totalMove < 0):
+    if (totalMove == 0):
         logger.warning("No one is here. The air conditioner should turn off. --3") # Trigger alert
     
