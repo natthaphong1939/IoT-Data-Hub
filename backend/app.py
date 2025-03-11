@@ -15,9 +15,6 @@ from fastapi.middleware.cors import CORSMiddleware
 # Load environment variables from the .env file
 load_dotenv()
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
-
 app = FastAPI()
 
 origins = ["http://localhost:3000"]
