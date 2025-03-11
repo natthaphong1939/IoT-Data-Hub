@@ -5,11 +5,11 @@ import machine
 import time
 
 # กำหนดค่า WiFi
-SSID = "TDXII"
-PASSWORD = "tdxii222"
+SSID = "***"
+PASSWORD = "***"
 
 # API ของ Backend
-API_URL = "http://172.20.10.2:8000/motion"
+API_URL = "http://*****:8000/motion"
 
 # ตั้งค่า PIR Sensor (ขา GPIO14 หรือ D5 บน ESP8266/ESP32)
 pir_pin = machine.Pin(14, machine.Pin.IN)
