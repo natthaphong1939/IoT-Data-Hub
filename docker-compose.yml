@@ -3,8 +3,8 @@ version: '3.8'
 services:
   database:
     build: 
-       context: ./database
-       dockerfile: Dockerfile
+      context: ./database
+      dockerfile: Dockerfile
     image: iothub_database-image:latest
     container_name: iothub_database
     environment:
@@ -50,6 +50,9 @@ services:
       - "3000:3000"
     networks:
       - iot-network
+    volumes:  
+      - ./frontend:/app
+      - /app/node_modules
 
 networks:
   iot-network:
