@@ -135,7 +135,7 @@ def getMotionData(sync_number: int, group: bool = False):
         if group:
             total_movements, max_timestamp = data[0] if data else (0, None)
             if total_movements == 0:
-            return {
+             return {
                 "totalMovements": total_movements,
                 "maxTimestamp": max_timestamp if max_timestamp else "No data"
             }
