@@ -129,14 +129,23 @@ def getMotionData(sync_number: int, group: bool = False):
             FROM motion_logs
             WHERE syncNumber = %s;
             """
+        print(f"sync number1 --> {sync_number}")
         with conn.cursor() as cur:
+            print(f"sync number2 --> {sync_number}")
             cur.execute(query, (sync_number,))
             data = cur.fetchall()
         if group:
+            print(f"group --> {group}")
             total_movements, max_timestamp = data[0] if data else (0, None)
-            if total_movements == 0:
+            print(f"group is true: {total_movements} {max_timestamp}")
+            if total_movements != 0 and max_timestamp != None:
              return {
                 "totalMovements": total_movements,
+                "maxTimestamp": max_timestamp if max_timestamp else "No data"
+            }
+            else:
+                return {
+                "totalMovements": None,
                 "maxTimestamp": max_timestamp if max_timestamp else "No data"
             }
         else:
@@ -250,6 +259,7 @@ async def read_root():
 @repeat_every(seconds=25 * 60)  # Repeat every 25 minutes
 async def increment_count_task():
     app.state.sync_count += 1
+    print(f"app sync count --> {app.state.sync_count } ")
     if app.state.sync_count  > 15:
         app.state.sync_count  = 0
     
