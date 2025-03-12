@@ -46,7 +46,6 @@ time_diff = 180
 
 #Use to sync motion sensor
 app.state.sync_count = 0
-app.state.i = 0
 
 class TempData(BaseModel):
     Location: str
@@ -87,28 +86,25 @@ async def currentTime() -> str:
 
 async def query(secondary_device: str, current_temperature: float, current_timestamp: int):
     try:
-        app.state.i = app.state.i +1
-        if app.state.i == 2:
-            conn = get_db_connection()
-            query = """
-            SELECT timestamps, temperature
-            FROM temperature_logs
-            WHERE location = %s
-            ORDER BY timestamps DESC
-            LIMIT 1;
-            """ 
-            with conn.cursor() as cursor:
-                cursor.execute(query, (secondary_device,))
-                result = cursor.fetchone()
-            app.state.i = 0
-            if result:
-                previous_timestamp, previous_temperature = result
-                # If the temperature difference exceeds 10 and the time difference is less than 1500 seconds(25 minutes), trigger an alert
-                if (
-                    abs(float(previous_temperature) - float(current_temperature)) > temp_diff and
-                    abs(previous_timestamp - current_timestamp) < time_diff
-                ):
-                    logger.warning("No one is here. The air conditioner should turn off. -- 1") # Trigger alert
+        conn = get_db_connection()
+        query = """
+        SELECT timestamps, temperature
+        FROM temperature_logs
+        WHERE location = %s
+        ORDER BY timestamps DESC
+        LIMIT 1;
+        """ 
+        with conn.cursor() as cursor:
+            cursor.execute(query, (secondary_device,))
+            result = cursor.fetchone()
+        if result:
+            previous_timestamp, previous_temperature = result
+            # If the temperature difference exceeds 10 and the time difference is less than 1500 seconds(25 minutes), trigger an alert
+            if (
+                abs(float(previous_temperature) - float(current_temperature)) > temp_diff and
+                abs(previous_timestamp - current_timestamp) < time_diff
+            ):
+                logger.warning("No one is here. The air conditioner should turn off. -- 1") # Trigger alert
     except Exception as e:
         print(f"Error occurred: {e}")
     finally:
@@ -129,15 +125,11 @@ def getMotionData(sync_number: int, group: bool = False):
             FROM motion_logs
             WHERE syncNumber = %s;
             """
-        print(f"sync number1 --> {sync_number}")
         with conn.cursor() as cur:
-            print(f"sync number2 --> {sync_number}")
             cur.execute(query, (sync_number,))
             data = cur.fetchall()
         if group:
-            print(f"group --> {group}")
             total_movements, max_timestamp = data[0] if data else (0, None)
-            print(f"group is true: {total_movements} {max_timestamp}")
             if total_movements != 0 and max_timestamp != None:
              return {
                 "totalMovements": total_movements,
