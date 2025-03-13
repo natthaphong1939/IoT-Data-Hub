@@ -32,15 +32,14 @@ export default function Home() {
   }, []);
 
   const handleOpenDoor = async () => {
-    setLoading(true);
     try {
-      const response = await axios.post("http://localhost:8000/open");
-      alert(response.data.message || response.data.error);
+        const response = await axios.post("http://localhost:8000/api/open");
+
+        console.log("Door Open Response:", response.data);
     } catch (error) {
-      alert("Failed to send request");
+        console.error("Error opening door:", error);
     }
-    setLoading(false);
-  };
+};
   
   
   if (loading) return <p className="text-center text-gray-500">Loading...</p>;
