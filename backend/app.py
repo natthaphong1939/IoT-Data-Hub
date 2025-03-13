@@ -20,6 +20,8 @@ app = FastAPI()
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+connected_clients = set()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -84,6 +86,18 @@ def get_db_connection():
 async def currentTime() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+async def send_alert(message: str):
+    disconnected_clients = set()
+    for client in connected_clients:
+        try:
+            await client.send_text(message)
+        except Exception as e:
+            logger.error(f"Error sending message: {e}")
+            disconnected_clients.add(client)
+
+    for client in disconnected_clients:
+        connected_clients.remove(client)
+
 async def query(secondary_device: str, current_temperature: float, current_timestamp: int):
     try:
         conn = get_db_connection()
@@ -105,6 +119,7 @@ async def query(secondary_device: str, current_temperature: float, current_times
                 abs(previous_timestamp - current_timestamp) <= time_diff
             ):
                 logger.warning("No one is here. The air conditioner should turn off. -- 1") # Trigger alert
+                await send_alert("No one is here. The air conditioner should turn off!")
     except Exception as e:
         print(f"Error occurred: {e}")
     finally:
@@ -246,6 +261,21 @@ async def get_count():
 @app.get("/")
 async def read_root():
     return {"Hello": "World"}
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    connected_clients.add(websocket)
+    logger.info("Client connected")
+
+    try:
+        while True:
+            await websocket.receive_text()  # Keep the connection alive
+    except WebSocketDisconnect:
+        connected_clients.remove(websocket)
+        logger.info("Client disconnected")
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
 
 @app.on_event("startup")
 @repeat_every(seconds=25 * 60)  # Repeat every 25 minutes
