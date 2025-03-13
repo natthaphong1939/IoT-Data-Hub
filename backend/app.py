@@ -101,8 +101,8 @@ async def query(secondary_device: str, current_temperature: float, current_times
             previous_timestamp, previous_temperature = result
             # If the temperature difference exceeds 10 and the time difference is less than 1500 seconds(25 minutes), trigger an alert
             if (
-                abs(float(previous_temperature) - float(current_temperature)) > temp_diff and
-                abs(previous_timestamp - current_timestamp) < time_diff
+                abs(float(previous_temperature) - float(current_temperature)) >= temp_diff and
+                abs(previous_timestamp - current_timestamp) <= time_diff
             ):
                 logger.warning("No one is here. The air conditioner should turn off. -- 1") # Trigger alert
     except Exception as e:
