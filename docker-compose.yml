@@ -37,6 +37,9 @@ services:
     networks:
       - iot-network  
     restart: always
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
 
   frontend:
     build:
