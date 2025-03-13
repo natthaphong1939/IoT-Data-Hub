@@ -55,7 +55,7 @@ while True:
     # เมื่อครบ 30 วินาที ให้ส่งข้อมูล
     if current_time - start_time >= 10:
         json = fetch_count()
-        count = json['count']
+        count = json['SyncNumber']
         print(f"new count ----> {count}")
         timestamp = int(time.time())  # ได้เป็น Unix Timestamp
 
