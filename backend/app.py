@@ -3,12 +3,14 @@ import json
 import logging
 import asyncio
 import psycopg2
+import requests
+import traceback
 from datetime import datetime
 from dotenv import load_dotenv
 from typing import Optional
 from pydantic import BaseModel
 from psycopg2 import pool
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request
 from fastapi_utils.tasks import repeat_every
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -29,6 +31,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+API_KEY = os.getenv("API_KEY")
+ESP32_IP = "http://172.20.10.2"
 
 # Database connection details from environment variables
 DB_HOST = os.getenv("DB_HOST")
@@ -256,6 +261,24 @@ async def post_motion(motiondata: MotionData) -> dict:
 @app.get('/count')
 async def get_count():
     return {"SyncNumber": app.state.sync_count}
+
+
+
+async def verify_api_key(x_api_key: str = Header(None)):
+    if x_api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+    return x_api_key
+
+@app.post("/open")
+async def open_door(auth: str = verify_api_key):
+    try:
+        response = requests.post(f"{ESP32_IP}/api/open", timeout=10)
+        response.raise_for_status()
+        return {"message": "Sent to ESP32", "esp_response": response.text}
+    except requests.exceptions.RequestException as e:
+        print("Error connecting to ESP32:", traceback.format_exc())
+        return {"error": f"Failed to connect: {str(e)}"}
+
 
 #Just a Root path Nothing importance :)
 @app.get("/")

@@ -30,6 +30,18 @@ export default function Home() {
 
     fetchData();
   }, []);
+
+  const handleOpenDoor = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.post("http://localhost:8000/open");
+      alert(response.data.message || response.data.error);
+    } catch (error) {
+      alert("Failed to send request");
+    }
+    setLoading(false);
+  };
+  
   
   if (loading) return <p className="text-center text-gray-500">Loading...</p>;
   if (error) return <p className="text-center text-red-500">{error}</p>;
@@ -67,8 +79,8 @@ export default function Home() {
 
           <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
             <button
-              // onClick={handleButtonClick}
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full">Send "open" to WebSocket
+              onClick={handleOpenDoor}
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full">Send "open"
             </button>
           </div>
         </section>
