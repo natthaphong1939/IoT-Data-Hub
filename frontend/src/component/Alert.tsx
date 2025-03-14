@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { formatTimestampTH } from "../function/formatTimestampTH";
 
 export default function AlertComponent() {
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
@@ -46,7 +47,8 @@ export default function AlertComponent() {
                             </button>
                         </div>
                         <p className="text-gray-500 text-right mt-4">
-                            Time: {new Date().toLocaleTimeString()}
+                            {/* Time: {new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })} */}
+                            Time: {formatTimestampTH().time}
                         </p>
                     </div>
                 </div>

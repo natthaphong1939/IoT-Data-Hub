@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { formatTimestampTH } from "./function/formatTimestampTH";
 
 interface TempData {
   Location: string;
@@ -60,7 +61,7 @@ export default function Home() {
   if (error) return <p className="text-center text-red-500">{error}</p>;
 
   return (
-    <div className="flex flex-col h-full gap-4 ">
+    <div className="flex flex-col h-full gap-4">
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <RoomStatus isOpen={isOpen} handleOpenDoor={handleOpenDoor} />
         <TemperatureDisplay tempData={tempData} />
@@ -105,9 +106,9 @@ const TemperatureDisplay = ({ tempData }: { tempData: Record<string, TempData> }
             {tempData?.[location]?.Temperature?.toFixed(1) ?? "--.-"}°C
           </span>
           <p className="text-sm text-gray-500">
-            {tempData?.[location]?.Timestamps ? new Date(tempData[location].Timestamps * 1000).toLocaleDateString() : "--/--/----"}
+            {formatTimestampTH(tempData?.[location]?.Timestamps).date}
             <br />
-            {tempData?.[location]?.Timestamps ? new Date(tempData[location].Timestamps * 1000).toLocaleTimeString() : "--:--:-- --"}
+            {formatTimestampTH(tempData?.[location]?.Timestamps).time}
           </p>
         </div>
       ))
@@ -120,7 +121,7 @@ const MotionDataTable = ({ motionData, motionDataGroup }: { motionData: Record<s
   <section className="w-full">
     <div className="bg-white h-full rounded-xl p-4 flex flex-col">
       <h2 className="mb-2">Motion</h2>
-      <p>Total time stamps: {motionDataGroup?.maxTimestamp ? new Date(motionDataGroup.maxTimestamp * 1000).toLocaleTimeString() : "--:--:-- --"}</p>
+      <p>Total time stamps: {formatTimestampTH(motionDataGroup?.maxTimestamp).time}</p>
       <p>Total number of movements: {motionDataGroup?.totalMovements ?? "--"}</p>
 
       <div className="relative overflow-x-auto">
@@ -136,7 +137,7 @@ const MotionDataTable = ({ motionData, motionDataGroup }: { motionData: Record<s
             {Object.entries(motionData ?? {}).map(([location, data]) => (
               <tr key={location} className="odd:bg-white even:bg-gray-50 border-b border-gray-200">
                 <th className="px-6 py-4 font-medium text-gray-900">{location}</th>
-                <td className="px-6 py-4">{data.Timestamp ? new Date(data.Timestamp * 1000).toLocaleTimeString() : "--:--:-- --"}</td>
+                <td className="px-6 py-4">{formatTimestampTH(data.Timestamp).time}</td>
                 <td className="px-6 py-4">{data.NumberOfMovements ?? "--"}</td>
               </tr>
             ))}
