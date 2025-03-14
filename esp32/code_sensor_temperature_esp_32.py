@@ -16,7 +16,6 @@ PASSWORD = const("*****") #Password wifi
 #URL Back-end
 URL = const("http://****/temp") 
 headers = {'Content-Type': 'application/json'}
-
 try:
     sta_if = network.WLAN(network.STA_IF) #statation interface
     sta_if.active(True)
@@ -36,17 +35,15 @@ def read_data() -> dict:
         DHT_Sensor.measure()
         temp = DHT_Sensor.temperature()
         sensor_data = {
-            "Location" : "Outside", #This board's position. You must use "Inside" and "Outside" only. 
+            "Location" : "Inside", #This board's position. You must use "Inside" and "Outside" only. 
             "timestamp": current_Measuretime,
             "temperature": temp,
-            "Error" : "Null"
         }
     except Exception as e:
         sensor_data = {
-            "Location" : "Outside", #This board's position. You must use "Inside" and "Outside" only. 
+            "Location" : "Inside", #This board's position. You must use "Inside" and "Outside" only. 
             "timestamp": current_Measuretime,
-            "temperature": "Null",
-            "Error" : str(e)
+            "temperature": None
             }
     return ujson.dumps(sensor_data)
 
@@ -63,5 +60,4 @@ while  True:
     json_data = read_data()
     post_data(json_data)
     utime.sleep(1800) #sleep 30 minutes
-
 
