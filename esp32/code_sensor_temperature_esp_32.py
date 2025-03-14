@@ -36,14 +36,14 @@ def read_data() -> dict:
         temp = DHT_Sensor.temperature()
         sensor_data = {
             "Location" : "Inside", #This board's position. You must use "Inside" and "Outside" only. 
-            "timestamp": current_Measuretime,
-            "temperature": temp,
+            "Timestamp": current_Measuretime,
+            "Temperature": temp,
         }
     except Exception as e:
         sensor_data = {
             "Location" : "Inside", #This board's position. You must use "Inside" and "Outside" only. 
-            "timestamp": current_Measuretime,
-            "temperature": None
+            "Timestamp": current_Measuretime,
+            "Temperature": None
             }
     return ujson.dumps(sensor_data)
 
