@@ -11,3 +11,7 @@ h2 {
 .h-d {
     @apply h-70
 }
+
+.bg-opacity-50 {
+    background-color: rgba(0,0,0,0.5)
+}

@@ -29,22 +29,28 @@ export default function AlertComponent() {
     }, []);
 
     return (
-        <div className="flex justify-center">
+        <>
             {alertMessage && (
-                <div className="w-fit rounded fixed bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4">
-                    <div className="flex justify-between items-center">
-                        <p className="font-bold">Be Warned</p>
-                        <button
-                            onClick={() => setAlertMessage(null)}
-                            className="text-orange-700 hover:text-orange-900 cursor-pointer"
-                        >
-                            ✖
-                        </button>
+                <div className="fixed inset-0 z-1 flex items-center justify-center bg-opacity-50">
+                    <div className="bg-white p-6 rounded-lg w-96">
+                        <div className="flex mb-4">
+                            <div>
+                                <h2 className="text-lg font-bold text-orange-700">Be Warned</h2>
+                                <p className="text-gray-700">{alertMessage}</p>
+                            </div>
+                            <button
+                                onClick={() => setAlertMessage(null)}
+                                className="cursor-pointer h-fit"
+                            >
+                                ✖
+                            </button>
+                        </div>
+                        <p className="text-gray-500 text-right mt-4">
+                            Time: {new Date().toLocaleTimeString()}
+                        </p>
                     </div>
-                    <p>{alertMessage}</p>
-                    <p className="text-xs text-right">Time: {new Date().toLocaleTimeString()}</p>
                 </div>
             )}
-        </div>
+        </>
     );
 }
