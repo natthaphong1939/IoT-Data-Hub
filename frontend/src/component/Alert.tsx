@@ -52,7 +52,7 @@ export default function AlertComponent() {
                             </button>
                         </div>
                         <p className="text-right mt-4">
-                            Time: {formatTimestampTH().time}
+                            Timestamp: {formatTimestampTH()}
                         </p>
                     </div>
                 </div>

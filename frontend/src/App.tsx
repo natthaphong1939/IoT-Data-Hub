@@ -100,12 +100,10 @@ const TemperatureDisplay = ({ tempData }: { tempData: Record<string, TempData> }
         <div key={location} className="flex flex-col justify-between w-full h-d md:h-full p-4 bg-white rounded-xl text-center">
           <h2 className="text-xl font-medium">{location} Temperature</h2>
           <span className="text-4xl font-bold text-blue-600">
-            {tempData?.[location]?.Temperature?.toFixed(1) ?? "--.-"}°C
+            {tempData?.[location]?.Temperature?.toFixed(1) ?? "-"}°C
           </span>
           <p className="text-sm text-gray-500">
-            {formatTimestampTH(tempData?.[location]?.Timestamps).date}
-            <br />
-            {formatTimestampTH(tempData?.[location]?.Timestamps).time}
+            {formatTimestampTH(tempData?.[location]?.Timestamps)}
           </p>
         </div>
       ))}
@@ -117,15 +115,15 @@ const MotionDataTable = ({ motionData, motionDataGroup }: { motionData: Record<s
   <section className="w-full">
     <div className="bg-white h-full rounded-xl p-4 flex flex-col">
       <h2>Motion</h2>
-      <p>Total time stamps: {formatTimestampTH(motionDataGroup?.maxTimestamp).time}</p>
-      <p>Total number of movements: {motionDataGroup?.totalMovements ?? "--"}</p>
+      <p>Total Date and Time: {formatTimestampTH(motionDataGroup?.maxTimestamp)}</p>
+      <p>Total number of movements: {motionDataGroup?.totalMovements ?? "-"}</p>
 
       <div className="relative overflow-x-auto">
         <table className="mt-4 w-full text-sm text-left text-gray-600">
           <thead className="text-gray-700 uppercase bg-gray-200 whitespace-nowrap">
             <tr>
               <th className="px-6 py-3">Location</th>
-              <th className="px-6 py-3">Timestamps</th>
+              <th className="px-6 py-3">Timestamp</th>
               <th className="px-6 py-3">Number of movements</th>
             </tr>
           </thead>
@@ -133,8 +131,8 @@ const MotionDataTable = ({ motionData, motionDataGroup }: { motionData: Record<s
             {Object.entries(motionData ?? {}).map(([location, data]) => (
               <tr key={location} className="odd:bg-white even:bg-gray-50 border-b border-gray-200">
                 <th className="px-6 py-4 font-medium text-gray-900">{location}</th>
-                <td className="px-6 py-4">{formatTimestampTH(data.Timestamp).time}</td>
-                <td className="px-6 py-4">{data.NumberOfMovements ?? "--"}</td>
+                <td className="px-6 py-4">{formatTimestampTH(data.Timestamp)}</td>
+                <td className="px-6 py-4">{data.NumberOfMovements ?? "-"}</td>
               </tr>
             ))}
           </tbody>
