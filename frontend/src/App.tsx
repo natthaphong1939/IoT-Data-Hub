@@ -78,10 +78,7 @@ const RoomStatus = ({ isOpen, handleOpenDoor }: { isOpen: boolean; handleOpenDoo
         <h2 className="text-xl font-bold">Room 39</h2>
         <div className="flex items-center">
           <p>
-            Status:
-            <span className={isOpen ? "text-green-500" : "text-red-500"}>
-              {isOpen ? "open" : "closed"}
-            </span>
+            Status:<span className={isOpen ? "text-green-500" : "text-red-500"}> {isOpen ? "open" : "closed"}</span>
           </p>
         </div>
       </div>
@@ -119,7 +116,7 @@ const TemperatureDisplay = ({ tempData }: { tempData: Record<string, TempData> }
 const MotionDataTable = ({ motionData, motionDataGroup }: { motionData: Record<string, MotionData>; motionDataGroup: Record<string, any> }) => (
   <section className="w-full">
     <div className="bg-white h-full rounded-xl p-4 flex flex-col">
-      <h2 className="mb-2">Motion</h2>
+      <h2>Motion</h2>
       <p>Total time stamps: {formatTimestampTH(motionDataGroup?.maxTimestamp).time}</p>
       <p>Total number of movements: {motionDataGroup?.totalMovements ?? "--"}</p>
 
