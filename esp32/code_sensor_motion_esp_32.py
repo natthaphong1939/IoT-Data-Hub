@@ -85,8 +85,8 @@ while True:
 
     current_time = time.time()
 
-    # เมื่อครบ 30 วินาที ให้ส่งข้อมูล
-    if current_time - start_time >= 10:  # Adjust as needed, seems like it should be 30 based on comment
+    # เมื่อครบ 30 นาที ให้ส่งข้อมูล
+    if current_time - start_time >= 1800:  # Adjust as needed, seems like it should be 30 based on comment
         json = fetch_count()
         count = json['SyncNumber'] if json else 0  # Add a fallback if fetch_count fails
         print(f"new count ----> {count}")
