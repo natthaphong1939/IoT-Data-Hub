@@ -46,7 +46,7 @@ device1 = os.getenv("DEVICE_TEMP1")
 device2 = os.getenv("DEVICE_TEMP2")
 
 #Temperature difference (Celsius)
-temp_diff = float(10)
+temp_diff = float(5)
 
 #Time difference (Second Unit)
 time_diff = 180
@@ -118,7 +118,7 @@ async def query(secondary_device: str, current_temperature: float, current_times
             result = cursor.fetchone()
         if result:
             previous_timestamp, previous_temperature = result
-            # If the temperature difference exceeds 10 and the time difference is less than 1500 seconds(25 minutes), trigger an alert
+            # If the temperature difference exceeds 5 unit and the time difference is less than or equal 180 seconds(3 minutes), trigger an alert
             if (
                 abs(float(previous_temperature) - float(current_temperature)) >= temp_diff and
                 abs(previous_timestamp - current_timestamp) <= time_diff
