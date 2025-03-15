@@ -19,15 +19,14 @@ export default function Home() {
   const [tempData, setTempData] = useState<Record<string, TempData>>({});
   const [motionData, setMotionData] = useState<Record<string, MotionData>>({});
   const [motionDataGroup, setMotionDataGroup] = useState<Record<string, any>>({});
-  const [isOpen, setIsOpen] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [tempResponse, motionGroupResponse, motionEachResponse] = await Promise.all([
-          axios.get("http://localhost:8000/temp"),
-          axios.get("http://localhost:8000/motion/group"),
-          axios.get("http://localhost:8000/motion/each"),
+          axios.get(`${import.meta.env.VITE_API_URL}/temp`),
+          axios.get(`${import.meta.env.VITE_API_URL}/motion/group`),
+          axios.get(`${import.meta.env.VITE_API_URL}/motion/each`),
         ]);
 
         setTempData(tempResponse.data);
@@ -45,10 +44,8 @@ export default function Home() {
   }, []);
 
   const handleOpenDoor = async () => {
-    setIsOpen((prev) => !prev);
-
     try {
-      const response = await axios.post("http://localhost:8000/api/open");
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/open`);
 
       console.log("Door Open Response:", response.data);
     } catch (error) {
@@ -63,31 +60,28 @@ export default function Home() {
   return (
     <div className="flex flex-col h-full gap-4">
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <RoomStatus isOpen={isOpen} handleOpenDoor={handleOpenDoor} />
+        <RoomStatus handleOpenDoor={handleOpenDoor} />
         <TemperatureDisplay tempData={tempData} />
       </section>
       <MotionDataTable motionData={motionData} motionDataGroup={motionDataGroup} />
     </div>
   );
 }
-
-const RoomStatus = ({ isOpen, handleOpenDoor }: { isOpen: boolean; handleOpenDoor: () => void }) => (
+const RoomStatus = ({ handleOpenDoor }: { handleOpenDoor: () => void }) => (
   <section className="w-full">
-    <div className="h-d bg-white rounded-xl p-4 flex flex-col justify-between shadow-md">
+    <div className="h-d bg-white rounded-xl p-4 flex flex-col">
       <div className="flex flex-col">
-        <h2 className="text-xl font-bold">Room 39</h2>
-        <div className="flex items-center">
-          <p>
-            Status:<span className={isOpen ? "text-green-500" : "text-red-500"}> {isOpen ? "open" : "closed"}</span>
-          </p>
-        </div>
+        <h2 className="text-xl font-bold mb-2">Door</h2>
       </div>
-      <button
-        onClick={handleOpenDoor}
-        className="mt-4 py-2 px-4 rounded w-full text-white bg-blue-500 font-bold transition duration-200bg-blue-500 hover:bg-blue-700 cursor-pointer"
-      >
-        {isOpen ? "Close" : "Open"}
-      </button>
+      
+      <div className="h-full flex items-center justify-center">
+        <button
+          className="w-full h-full text-white bg-blue-600 rounded-md cursor-pointer hover:bg-blue-700 duration-300 active:scale-95"
+          onClick={handleOpenDoor}
+        >
+          Open
+        </button>
+      </div>
     </div>
   </section>
 );

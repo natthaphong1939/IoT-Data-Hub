@@ -7,28 +7,12 @@ export default function AlertComponent() {
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
 
     useEffect(() => {
-        const ws = new WebSocket("ws://localhost:8000/ws");
-
-        ws.onopen = () => {
-            console.log("Connected to WebSocket Server");
-        };
-
+        const ws = new WebSocket(`${import.meta.env.VITE_API_URL}/ws`);
+        
         ws.onmessage = (event) => {
-            console.log("Message from server:", event.data);
             setAlertMessage(event.data);
         };
 
-        ws.onerror = (error) => {
-            console.error("WebSocket error:", error);
-        };
-
-        ws.onclose = () => {
-            console.log("WebSocket connection closed");
-        };
-
-        return () => {
-            ws.close();
-        };
     }, []);
 
     return (
