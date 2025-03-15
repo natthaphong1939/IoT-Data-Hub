@@ -300,8 +300,19 @@ async def websocket_endpoint(websocket: WebSocket):
 async def increment_count_task():
     app.state.sync_count += 1
     print(f"app sync count --> {app.state.sync_count } ")
-    if app.state.sync_count  > 15:
-        app.state.sync_count  = 0
+    if app.state.sync_count == 48:
+        conn = None
+        try:
+            conn = conn_pool.getconn()
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM motion_logs WHERE syncnumber BETWEEN 1 AND 48;")
+            print("Deleted records with syncnumber 1-48")
+        except Exception as e:
+            logger.error(f"An error occurred while deleting records: {e}")
+        finally:
+            if conn:
+                conn_pool.putconn(conn)
+            app.state.sync_count = 1 
     
 @app.on_event("startup")
 @repeat_every(seconds=31*60) #Repeat every 31 minutes
