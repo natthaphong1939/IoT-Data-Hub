@@ -100,7 +100,7 @@ const TemperatureDisplay = ({ tempData }: { tempData: Record<string, TempData> }
   return (
     <section className="flex flex-col sm:flex-row gap-4 col-span-1 md:col-span-2">
       {locations.map((location) => (
-        <div className="flex flex-col justify-between w-full h-d md:h-full p-4 bg-white rounded-xl text-center">
+        <div key={location} className="flex flex-col justify-between w-full h-d md:h-full p-4 bg-white rounded-xl text-center">
           <h2 className="text-xl font-medium">{location} Temperature</h2>
           <span className="text-4xl font-bold text-blue-600">
             {tempData?.[location]?.Temperature?.toFixed(1) ?? "--.-"}°C
@@ -111,8 +111,7 @@ const TemperatureDisplay = ({ tempData }: { tempData: Record<string, TempData> }
             {formatTimestampTH(tempData?.[location]?.Timestamps).time}
           </p>
         </div>
-      ))
-      }
+      ))}
     </section>
   );
 };
