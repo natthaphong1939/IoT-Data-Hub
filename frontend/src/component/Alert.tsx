@@ -47,7 +47,6 @@ export default function AlertComponent() {
                             </button>
                         </div>
                         <p className="text-gray-500 text-right mt-4">
-                            {/* Time: {new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })} */}
                             Time: {formatTimestampTH().time}
                         </p>
                     </div>
