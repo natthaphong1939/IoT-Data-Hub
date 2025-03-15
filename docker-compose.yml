@@ -8,13 +8,12 @@ services:
     image: iothub_database-image:latest
     container_name: iothub_database
     environment:
-      - POSTGRES_DB=${DB_NAME}  
-      - POSTGRES_USER=${DB_USER}  
-      - POSTGRES_PASSWORD=${DB_PASS} 
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
     volumes:
-      - database-volume:/var/lib/postgresql/data  
-    networks:
-      - iot-network
+      - database-volume:/var/lib/postgresql/data
+    network_mode: "host"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
@@ -23,26 +22,23 @@ services:
 
   backend:
     build:
-      context: ./backend  
-      dockerfile: Dockerfile  
+      context: ./backend
+      dockerfile: Dockerfile
     image: iothub_backend-image:latest
     depends_on:
       database:
-        condition: service_healthy  # ให้รอ database พร้อมก่อน
-    container_name: iothub_backend  
+        condition: service_healthy
+    container_name: iothub_backend
     env_file:
-      - .env  
-    ports:
-      - "8000:8000"
-    networks:
-      - iot-network  
+      - .env
+    network_mode: "host"
     restart: always
     volumes:
       - ./backend:/app
       - /app/node_modules
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]
-      interval: 10s
+      interval: 2h
       timeout: 5s
       retries: 5
 
@@ -55,16 +51,10 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-    ports:
-      - "3000:3000"
-    networks:
-      - iot-network
-    volumes:  
+    network_mode: "host"
+    volumes:
       - ./frontend:/app
       - /app/node_modules
-
-networks:
-  iot-network:
 
 volumes:
   database-volume:
