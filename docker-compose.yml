@@ -38,9 +38,10 @@ services:
       - /app/node_modules
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]
-      interval: 2h
+      interval: 1h
       timeout: 5s
-      retries: 5
+      retries: 1
+      start_period: 10s
 
   frontend:
     build:
@@ -49,8 +50,7 @@ services:
     image: iothub_frontend-image:latest
     container_name: iothub_frontend
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     network_mode: "host"
     volumes:
       - ./frontend:/app
