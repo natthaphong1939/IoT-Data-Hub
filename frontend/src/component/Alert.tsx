@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { formatTimestampTH } from "../function/formatTimestampTH";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 
 export default function AlertComponent() {
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
@@ -33,11 +35,14 @@ export default function AlertComponent() {
         <>
             {alertMessage && (
                 <div className="fixed inset-0 z-1 flex items-center justify-center bg-opacity-50">
-                    <div className="bg-white p-6 rounded-lg w-96">
-                        <div className="flex mb-4">
+                    <div className="bg-white p-6 rounded-lg w-fit">
+                        <div className="flex mb-4 gap-4">
                             <div>
-                                <h2 className="text-lg font-bold text-orange-700">Be Warned</h2>
-                                <p className="text-gray-700">{alertMessage}</p>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <FontAwesomeIcon icon={faTriangleExclamation} className="text-amber-500 text-2xl" />
+                                    <h2 className="text-lg font-bold">Warning</h2>
+                                </div>
+                                <p className="">{alertMessage}</p>
                             </div>
                             <button
                                 onClick={() => setAlertMessage(null)}
@@ -46,7 +51,7 @@ export default function AlertComponent() {
                                 ✖
                             </button>
                         </div>
-                        <p className="text-gray-500 text-right mt-4">
+                        <p className="text-right mt-4">
                             Time: {formatTimestampTH().time}
                         </p>
                     </div>
