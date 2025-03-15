@@ -3,8 +3,8 @@
 This project is used for the **EN814710 Cloud Application and Networking** course.  
 It collects temperature data via the **AM2301A** sensor and detects movement using the **HC-SR501** sensor, all connected to an **ESP32**.  
 
-The system measures indoor and outdoor temperatures to check if the air conditioner is running efficiently and if the room is occupied. It sends notifications to the professor’s page approximately **every 30 minutes**.
-
+The system measures indoor and outdoor temperatures to check if the air conditioner is running efficiently and if the room is occupied. It sends notifications to the professor’s page approximately **every 30 minutes** and professor can 
+open the door from web page.
 ---
 
 ## Requirement  
