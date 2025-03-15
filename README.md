@@ -39,3 +39,11 @@ docker-compose down  # Add `-v` to remove volumes if necessary
 
 ⚠️ **WARNING!** Before using this project, make sure to set the `DEVICE_TEMP` to be the same as `Location` in the ESP32 code. I highly recommended to create and configure a default `.env` file with the appropriate settings for `DEVICE_TEMP` and `Location`.
 
+Frontend Configuration
+To connect the frontend with the backend, ensure that you set the VITE_API_URL in the .env file of the frontend project directory.
+
+Create a .env file in the frontend/ directory with the following content:
+**`.env.local` Configuration**
+
+```env
+VITE_API_URL=http://{YOUR_IP_ADDRESS}:8000
