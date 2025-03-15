@@ -6,16 +6,20 @@ import utime
 import ujson
 
 #Pin
-PIN_DHT = const(14)
+PIN_DHT = const(**)
 DHT_Sensor = dht.DHT22(Pin(PIN_DHT))  
 
+#time
+EPOCH_OFFSET = const(946684800)
+
 #Wi-FI Credentials
-SSID = const("******") #SSID Wifi
-PASSWORD = const("*****") #Password wifi
+SSID = const("**") #SSID Wifi
+PASSWORD = const("*******") #Password wifi
 
 #URL Back-end
-URL = const("http://****/temp") 
+URL = const("https://*********/temp") 
 headers = {'Content-Type': 'application/json'}
+
 try:
     sta_if = network.WLAN(network.STA_IF) #statation interface
     sta_if.active(True)
@@ -30,7 +34,7 @@ print("Connected\n This board IP is --> ", sta_if.ifconfig()[0])
 
 #Measure a temperature 
 def read_data() -> dict:
-    current_Measuretime = utime.time()
+    current_Measuretime = utime.time() + EPOCH_OFFSET
     try:
         DHT_Sensor.measure()
         temp = DHT_Sensor.temperature()
