@@ -117,7 +117,7 @@ const MotionDataTable = ({ motionData, motionDataGroup }: { motionData: Record<s
           <thead className="text-gray-700 uppercase bg-gray-200 whitespace-nowrap">
             <tr>
               <th className="px-6 py-3">Location</th>
-              <th className="px-6 py-3">Timestamp</th>
+              <th className="px-6 py-3">Date and Time</th>
               <th className="px-6 py-3">Number of movements</th>
             </tr>
           </thead>
