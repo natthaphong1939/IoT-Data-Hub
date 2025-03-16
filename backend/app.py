@@ -119,9 +119,11 @@ async def query(secondary_device: str, current_temperature: float, current_times
         if result:
             previous_timestamp, previous_temperature = result
             # If the temperature difference exceeds 5 unit and the time difference is less than or equal 180 seconds(3 minutes), trigger an alert
+            totalMove = getMotionData(app.state.sync_count, group=True)
             if (
                 abs(float(previous_temperature) - float(current_temperature)) >= temp_diff and
-                abs(previous_timestamp - current_timestamp) <= time_diff
+                abs(previous_timestamp - current_timestamp) <= time_diff and
+                (totalMove.get("totalMovements") == 0)
             ):
                 logger.warning("No one is here. The air conditioner should turn off. -- 1") # Trigger alert
                 await send_alert("No one is here. The air conditioner should turn off!")
@@ -151,14 +153,14 @@ def getMotionData(sync_number: int, group: bool = False):
         if group:
             total_movements, max_timestamp = data[0] if data else (0, None)
             if total_movements != 0 and max_timestamp != None:
-             return {
-                "totalMovements": total_movements,
-                "maxTimestamp": max_timestamp if max_timestamp else "No data"
-            }
+                return {
+                    "totalMovements": total_movements,
+                    "maxTimestamp": max_timestamp if max_timestamp else None
+                }
             else:
                 return {
-                "totalMovements": None,
-                "maxTimestamp": max_timestamp if max_timestamp else "No data"
+                "totalMovements": total_movements,
+                "maxTimestamp": max_timestamp if max_timestamp else None
             }
         else:
             return {
