@@ -41,6 +41,8 @@ export default function Home() {
     };
 
     fetchData();
+    const interval = setInterval(fetchData, 30 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleOpenDoor = async () => {
